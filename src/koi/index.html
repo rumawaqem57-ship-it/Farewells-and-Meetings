@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>恋喰者 · 灵语</title>
+    <script>
+      // 尽早恢复显示模式，避免手机框在首帧闪一下桌面布局（同老项目做法）
+      (function () {
+        try {
+          var raw = localStorage.getItem('koi-settings');
+          var parsed = raw ? JSON.parse(raw) : null;
+          var mode = parsed && parsed.display;
+          if (mode !== 'desktop' && mode !== 'mobile') mode = 'auto';
+          document.documentElement.dataset.displayMode = mode;
+          var narrow = window.matchMedia('(max-width: 768px)').matches;
+          document.documentElement.dataset.mobile =
+            mode === 'mobile' || (mode === 'auto' && narrow) ? 'true' : 'false';
+        } catch (e) {}
+      })();
+    </script>
+    <script>
+      // 精简渲染模式：首帧前定下来，避免粒子先跑起来再被关掉
+      (function () {
+        try {
+          var forced = null;
+          try { forced = localStorage.getItem('koi-force-lite'); } catch (e) {}
+          var lite;
+          if (forced === '1') lite = true;
+          else if (forced === '0') lite = false;
+          else if (new URLSearchParams(location.search).get('lite') === '1') lite = true;
+          else {
+            var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var cores = navigator.hardwareConcurrency || 8;
+            var mem = navigator.deviceMemory || 8;
+            lite = reduced || cores <= 4 || mem <= 4;
+          }
+          document.documentElement.dataset.lite = lite ? 'true' : 'false';
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://telegraph-image-c54.pages.dev" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@600;700&family=Outfit:wght@400;600;700;900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

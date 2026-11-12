@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>《略有活人感的对话交互》拆解 · 乱步忍Kixy</title>
+<style>
+  :root{
+    --ink:#1b1a18;
+    --ink-2:#3d3a35;
+    --ink-3:#6d6862;
+    --paper:#faf7f2;
+    --paper-2:#f2ede4;
+    --line:#ddd5c8;
+    --red:#a3342b;
+    --red-soft:#f3e3e0;
+    --gold:#8a6a2f;
+    --code-bg:#f6f2ea;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Georgia","Songti SC","Source Han Serif SC","Noto Serif SC",serif;
+    line-height:1.85;font-size:16px;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:56px 28px 96px;}
+  header.top{border-bottom:2px solid var(--ink);padding-bottom:26px;margin-bottom:14px;}
+  .kicker{
+    font-family:"Helvetica Neue",Arial,"PingFang SC",sans-serif;
+    font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);
+    margin-bottom:14px;
+  }
+  h1{font-size:34px;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;}
+  h1 small{display:block;font-size:14px;font-weight:400;color:var(--ink-3);margin-top:12px;letter-spacing:0;}
+  .meta{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+    background:var(--line);border:1px solid var(--line);margin:26px 0 8px;
+    font-family:"Helvetica Neue",Arial,"PingFang SC",sans-serif;font-size:13px;
+  }
+  .meta div{background:var(--paper-2);padding:12px 14px;}
+  .meta b{display:block;font-size:11px;letter-spacing:.12em;color:var(--ink-3);font-weight:600;margin-bottom:3px;}
+  h2{
+    font-size:22px;margin:64px 0 8px;padding-top:22px;border-top:1px solid var(--line);
+    letter-spacing:-.005em;
+  }
+  h2 .num{
+    font-family:"Helvetica Neue",Arial,sans-serif;font-size:12px;color:var(--red);
+    letter-spacing:.14em;display:block;margin-bottom:8px;font-weight:600;
+  }
+  h3{font-size:17px;margin:34px 0 6px;}
+  p{margin:14px 0;color:var(--ink-2);}
+  .lead{font-size:17px;color:var(--ink);}
+  strong{color:var(--ink);font-weight:700;}
+  em{font-style:normal;background:linear-gradient(transparent 62%, #e9d9a8 62%);padding:0 1px;}
+  .quote{
+    margin:24px 0;padding:16px 20px;background:#fff;border-left:3px solid var(--red);
+    font-size:15px;color:var(--ink-2);box-shadow:0 1px 0 var(--line);
+  }
+  .quote b{color:var(--red);}
+  figure{margin:26px 0;}
+  figure img{width:100%;display:block;border:1px solid var(--line);background:#fff;}
+  figcaption{
+    font-family:"Helvetica Neue",Arial,"PingFang SC",sans-serif;
+    font-size:12.5px;color:var(--ink-3);margin-top:8px;line-height:1.7;
+  }
+  figcaption b{color:var(--red);font-weight:600;margin-right:6px;letter-spacing:.04em;}
+  .tl{border-left:2px solid var(--line);margin:26px 0 0;padding-left:0;list-style:none;}
+  .tl li{position:relative;padding:0 0 22px 26px;}
+  .tl li::before{
+    content:"";position:absolute;left:-6px;top:9px;width:10px;height:10px;
+    background:var(--paper);border:2px solid var(--ink);border-radius:50%;
+  }
+  .tl .t{
+    font-family:"Helvetica Neue",Arial,sans-serif;font-size:12px;letter-spacing:.1em;
+    color:var(--red);font-weight:600;
+  }
+  .tl .d{font-size:15px;color:var(--ink-2);}
+  .tl .d b{color:var(--ink);}
+  .cards{display:grid;gap:14px;margin:22px 0;}
+  .card{
+    background:#fff;border:1px solid var(--line);padding:18px 20px;
+  }
+  .card .h{
+    display:flex;gap:12px;align-items:baseline;margin-bottom:6px;
+  }
+  .card .h .n{
+    font-family:"Helvetica Neue",Arial,sans-serif;font-size:11px;font-weight:700;
+    color:#fff;background:var(--ink);padding:2px 7px;letter-spacing:.06em;
+  }
+  .card .h .t{font-weight:700;font-size:16px;}
+  .card p{margin:6px 0;font-size:15px;}
+  .card .why{
+    font-family:"Helvetica Neue",Arial,"PingFang SC",sans-serif;
+    font-size:13px;color:var(--ink-3);margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);
+  }
+  .why b{color:var(--red);}
+  pre{
+    background:var(--code-bg);border:1px solid var(--line);margin:18px 0;
+    overflow-x:auto;font-size:13px;line-height:1.7;
+    font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    padding:0;
+  }
+  pre .code{padding:14px 16px 16px;}
+  .ln{
+    display:block;counter-increment:line;
+  }
+  .ln::before{
+    content:counter(line);
+    display:inline-block;width:2.4em;margin-right:14px;
+    color:#b3aa9b;text-align:right;user-select:none;
+  }
+  pre.code-block{counter-reset:line;}
+  code.inl{
+    font-family:"SFMono-Regular",Consolas,monospace;font-size:.88em;
+    background:var(--paper-2);padding:1px 5px;border:1px solid var(--line);
+  }
+  .tiers{display:grid;gap:12px;margin:20px 0;}
+  .tier{border:1px solid var(--line);background:#fff;padding:16px 18px;}
+  .tier .tag{
+    font-family:"Helvetica Neue",Arial,sans-serif;font-size:11px;letter-spacing:.1em;
+    color:var(--red);font-weight:700;
+  }
+  .tier h4{margin:4px 0 8px;font-size:15px;}
+  .tier p{margin:4px 0;font-size:14.5px;}
+  .box{
+    background:var(--red-soft);border:1px solid #e2c8c3;padding:18px 20px;margin:24px 0;
+  }
+  .box .t{font-weight:700;color:var(--red);margin-bottom:6px;font-size:15px;}
+  .box p{color:#5b3a36;margin:6px 0;font-size:15px;}
+  footer{
+    margin-top:70px;padding-top:22px;border-top:1px solid var(--line);
+    font-family:"Helvetica Neue",Arial,"PingFang SC",sans-serif;
+    font-size:12.5px;color:var(--ink-3);
+  }
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;}
+  .twocol h4{margin:0 0 6px;font-size:14px;font-family:"Helvetica Neue",Arial,sans-serif;letter-spacing:.04em;}
+  .twocol ul{margin:0;padding-left:18px;font-size:14.5px;color:var(--ink-2);}
+  .twocol li{margin:5px 0;}
+  @media (max-width:620px){
+    .wrap{padding:34px 18px 70px;}
+    h1{font-size:26px;}
+    .twocol{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="kicker">Bilibili 拆解 · Demo 逆向</div>
+  <h1>《略有活人感的对话交互》
+    <small>UP 主「乱步忍Kixy」用两周从零做完编程 + 手绘素材 + 音效的个人 Demo。这篇把它拆成可抄的零件。</small>
+  </h1>
+  <div class="meta">
+    <div><b>BV 号</b>BV1gant6mETF</div>
+    <div><b>时长 / 画幅</b>4 分 20 秒 · 竖屏 1080×1920</div>
+    <div><b>数据（抓取时）</b>48.8 万播放 / 4.1 万赞 / 3.0 万收藏</div>
+    <div><b>引擎</b>Godot（视频里提到，之后要上手机）</div>
+  </div>
+</header>
+
+<p class="lead">我把它逐帧拆了：下载原片、按 2 秒抽帧、把游戏窗口从录屏里裁出来读 UI 文字，包括 UP 主手打的黑屏讲解页。下面是「它到底靠什么显得像活人」的完整机制，以及哪些能直接搬进你手上那套 koi 前端。</p>
+
+<div class="quote">
+  <b>一句话结论：</b>它的活人感不是来自 AI 多聪明，而是来自「<em>玩家说的每一句话都被当成人话处理，并且立刻在角色身上留下可见痕迹</em>」——台词接住你的语法、表情接住你的情绪、数字接住你的冒犯。三件事全部在 0.5 秒内回给你。
+</div>
+
+<h2><span class="num">CHAPTER 01</span>先把这 4 分钟拆开</h2>
+
+<ul class="tl">
+  <li>
+    <span class="t">00:00 – 00:08 · 主界面</span>
+    <div class="d">手绘线稿场景 + 蕾娜坐姿立绘。右侧悬浮两个东西：<b>输入框「点击输入关键词进行对话」+ 确认</b>，下面是 <b>「通常对话」</b>按钮。左下角常驻 <b>「蕾娜状态」</b>。</div>
+  </li>
+  <li>
+    <span class="t">00:04 – 00:08 · 状态面板（页签式）</span>
+    <div class="d">「LENA. status」：Lv.1 / HP 45/45 / ATK 10 / DEF 5 / AGI 15，两张空白卡「攻击技能」「支援技能」，背景压着 AUTO SKILL 字样。翻页后是关系页：<b>黏度：1 · 青梅竹马义姐</b>，底部一行小字状态描述。</div>
+  </li>
+  <li>
+    <span class="t">00:08 – 00:50 · 第一轮对话</span>
+    <div class="d">点「通常对话」→ 底部弹出对话框 <b>「怎么了，这么正式？」</b>。玩家在输入框里真的用中文输入法打字（帧里能看到候选词），确认后角色回应。<b>台词开始抠玩家语病</b>。</div>
+  </li>
+  <li>
+    <span class="t">00:50 – 01:30 · 数值与表情开始打架</span>
+    <div class="d">左上角飘出红字 <b>「亲密度 -1」</b>，立绘同时切成不耐烦表情，台词 <b>「为什么又要说啊？」</b>；换一句话后又飘 <b>「亲密度 +1」</b>，表情变成脸红+躲眼神，台词 <b>「唉？我说很难想象爱情这事」</b>。</div>
+  </li>
+  <li>
+    <span class="t">01:52 – 02:00 · 章节页</span>
+    <div class="d">「相关美术素材补充以及 尾语」——后面全是素材、差分、口味闲聊，含一句大实话：<b>「反正编程都扔给 ai 了」</b>。</div>
+  </li>
+  <li>
+    <span class="t">02:54 – 03:00 · 完整主界面</span>
+    <div class="d">顶栏三格：<b>DAY 1 体能 5/5 · 主营地 果实 10 颗 · 夜</b>；右下「次日」+ 读档/存档/设置。</div>
+  </li>
+</ul>
+
+<figure>
+  <img src="{{IMG11}}" alt="主界面">
+  <figcaption><b>00:00</b>主界面。注意「通常对话」和输入框是<b>两个独立入口</b>——一个负责推进，一个负责即兴。</figcaption>
+</figure>
+
+<h2><span class="num">CHAPTER 02</span>七个真起作用的零件</h2>
+
+<div class="cards">
+
+  <div class="card">
+    <div class="h"><span class="n">01</span><span class="t">输入框不是自由聊天，是「关键词投喂」</span></div>
+    <p>框里写着「点击输入关键词进行对话」。玩家能打字，但系统只认关键词。这是<b>用自由输入的体感，换确定性的实现成本</b>——两周做完的东西不可能接真 LLM 加状态机。</p>
+    <div class="why"><b>为什么有效：</b>玩家体验到的是「我说了算」，不是「我从四个选项里挑一个」。自由度是<b>感知问题</b>，不是技术问题。</div>
+  </div>
+
+  <div class="card">
+    <div class="h"><span class="n">02</span><span class="t">台词会接住玩家输入的语法</span></div>
+    <p>玩家打了句「喜欢你」，她回：<b>「不……你说喜欢我也不知道是喜欢什么啊，宾语呢？」</b>——把对方的句子当成真的句子来挑毛病。</p>
+    <div class="why"><b>为什么有效：</b>这是全片最狠的一手。AI 回得再漂亮，也只是「答得对」；吐槽你的<b>语病</b>，才会让人觉得「她在听我说话」，而不是「它在处理我的输入」。<b>抄这个。</b></div>
+  </div>
+
+  <div class="card">
+    <div class="h"><span class="n">03</span><span class="t">眼镜反光＝情绪遮罩</span></div>
+    <p>被问到难堪的问题时，立绘的镜片直接变成不透明白色，眼睛消失，配台词「喜欢眼镜？」——一个纯白椭圆盖住眼睛就完成了「黑化 / 无语 / 不想让你看」。</p>
+    <div class="why"><b>为什么有效：</b>零成本、零美术的<b>强情绪信号</b>。你只要准备一张「镜片高光」覆盖层，随时能叠到任何表情上。</div>
+  </div>
+
+  <div class="card">
+    <div class="h"><span class="n">04</span><span class="t">数值飘字必须落在立绘身上</span></div>
+    <p>「亲密度 -1」是左上角飘出的红字，2 秒淡出，<b>和表情切换同一帧发生</b>。</p>
+    <div class="why"><b>为什么有效：</b>数值单独放在面板里＝系统日志；和表情同帧出现＝<b>她被我弄不高兴了</b>。因果被压缩进 0.2 秒，玩家自己就完成了归因。</div>
+  </div>
+
+  <div class="card">
+    <div class="h"><span class="n">05</span><span class="t">台词故意「说不完整」</span></div>
+    <p>「…………不管是爱还是喜欢都无所谓了」「……抱歉，有点吓到了」——大量前置省略号，短句收尾，句子长度普遍不超过 20 字。</p>
+    <div class="why"><b>为什么有效：</b>完整、工整、有起承转合的句子是<b>写作</b>；半句话是<b>说话</b>。省略号还兼任情绪缓冲带，让表情切换有落点。</div>
+  </div>
+
+  <div class="card">
+    <div class="h"><span class="n">06</span><span class="t">立绘是可点击的实体，不是贴图</span></div>
+    <p>封面那张图底部写着「TIPS：点击立绘的各个部位查看详情」，点完弹出的是「果之宫黏度：Lv.1（微弱）· 纤细的腰肢，摸着没什么感觉」这类描述。</p>
+    <div class="why"><b>为什么有效：</b>把「看」变成「碰」。角色从<b>画面的一部分</b>升级成<b>可交互的对象</b>，而且这一下不需要台词、不需要剧情，成本极低、反馈极强。</div>
+  </div>
+
+  <div class="card">
+    <div class="h"><span class="n">07</span><span class="t">她有自己的日程表</span></div>
+    <p>顶栏「DAY 1 / 体能 5/5 / 果实 10 颗 / 夜」、「次日」按钮、场景的昼与夜。</p>
+    <div class="why"><b>为什么有效：</b>活人感的另一半是<b>她不在等你</b>。有时间流逝、有体力消耗、有资源，玩家才会觉得对话发生在「她的人生里」，而不是一个随时待命的对话框里。</div>
+  </div>
+
+</div>
+
+<figure>
+  <img src="{{IMG1}}" alt="开场对话">
+  <figcaption><b>00:26</b>「通常对话」触发第一句。对话框是米色纸感 + 手绘粗描边，名字标签是墨块黑底——和整个场景同一套笔触，不像 UI 像<b>漫画格子</b>。</figcaption>
+</figure>
+
+<figure>
+  <img src="{{IMG2}}" alt="宾语呢">
+  <figcaption><b>00:46</b>「不……你说喜欢我也不知道是喜欢什么啊，宾语呢？」——全片含金量最高的一句台词。<b>她在纠正玩家的语法，而不是回答玩家的问题。</b></figcaption>
+</figure>
+
+<figure>
+  <img src="{{IMG3}}" alt="眼镜反光">
+  <figcaption><b>00:58</b>镜片变白、眼睛消失，配「喜欢眼镜？」——零美术成本的情绪遮罩。</figcaption>
+</figure>
+
+<figure>
+  <img src="{{IMG4}}" alt="亲密度-1">
+  <figcaption><b>01:10</b>左上「亲密度 -1」红字飘出，同一帧立绘换成不耐烦表情（眼帘下垂 + 汗滴），台词「为什么又要说啊？」。<b>数值、表情、台词三件事同时到。</b></figcaption>
+</figure>
+
+<figure>
+  <img src="{{IMG5}}" alt="亲密度+1">
+  <figcaption><b>01:22</b>换一句话，正向反馈：「亲密度 +1」+ 躲眼神 + 脸红 +「唉？我说很难想象爱情这事」。</figcaption>
+</figure>
+
+<figure>
+  <img src="{{IMG6}}" alt="状态面板">
+  <figcaption><b>00:04</b>状态面板：数值卡 + 两个空技能槽（还没填）+ 背景压字 AUTO SKILL。<b>空槽位本身也是一种「未完待续」的钩子</b>。</figcaption>
+</figure>
+
+<figure>
+  <img src="{{IMG7}}" alt="关系页">
+  <figcaption><b>00:06</b>同一面板的关系页：「黏度：1 · 青梅竹马义姐」。<b>用一个自造词（黏度）代替「好感度」</b>，是低成本的世界观注入。</figcaption>
+</figure>
+
+<h2><span class="num">CHAPTER 03</span>视觉上它只做了三件事</h2>
+
+<div class="twocol">
+  <div>
+    <h4>配色（只有三色）</h4>
+    <ul>
+      <li>墨黑：描边、名字标签、文字</li>
+      <li>米纸：所有面板底色</li>
+      <li>一点暗红：数值变化、强调</li>
+    </ul>
+  </div>
+  <div>
+    <h4>笔触（只有一种）</h4>
+    <ul>
+      <li>铅笔排线 + 粗描边，全场景统一</li>
+      <li>UI 也用手绘描边，不做扁平矢量</li>
+      <li>对话框＝漫画格子，不是系统控件</li>
+    </ul>
+  </div>
+</div>
+
+<p>这套选择的好处不是「好看」，是<b>可复制</b>：一个人两周能画完的量，靠的是把美术压成单色线稿；而单色线稿反过来让「表情差分」变得极便宜——换个眉眼就是一张新表情，不需要重画光影。</p>
+
+<div class="box">
+  <div class="t">这条对你最有用</div>
+  <p>你在做 monster girl 图鉴和固定角色立绘，走的是<b>彩色精细插画</b>路线，表情差分成本很高。视频的路子是反的：<b>用低成本笔触换高密度差分</b>。不一定要换画风，但可以借它的结构——把「表情」拆成可叠加的层（眼、眉、嘴、脸红、汗、镜片高光），而不是一张张整图。</p>
+</div>
+
+<h2><span class="num">CHAPTER 04</span>搬到 koi 前端要改什么</h2>
+
+<p>你现在的 <code class="inl">src/koi</code> 已经有 <code class="inl">CharacterStage</code>（立绘舞台）、<code class="inl">DialogueBox</code>（对话框）、<code class="inl">TypingText</code>（打字机）、<code class="inl">ChoiceBar</code>（选项条），剧本行里也已经带 <code class="inl">emotion?: string</code> 字段（中文情绪标签，如「害羞」）。也就是说<b>骨架已经比这个 Demo 完整</b>，缺的正好是「活人感」那几块软组织。</p>
+
+<div class="tiers">
+  <div class="tier">
+    <span class="tag">TIER 1 · 半天</span>
+    <h4>表情过渡 + 情绪遮罩 + 数值飘字</h4>
+    <p>三件事都在 CharacterStage 这一层做完，不动剧本解析。</p>
+  </div>
+  <div class="tier">
+    <span class="tag">TIER 2 · 一天</span>
+    <h4>台词「接住」玩家：回显原文 + 语法吐槽 + 关键词输入框</h4>
+    <p>把玩家的输入当引用塞进台词，或者用正则判定语病后走吐槽分支。</p>
+  </div>
+  <div class="tier">
+    <span class="tag">TIER 3 · 两天</span>
+    <h4>可点击立绘分区 + 状态描述卡</h4>
+    <p>立绘切若干热区，点中出状态条。这条最出效果，也最费美术文案。</p>
+  </div>
+</div>
+
+<h3>TIER 1：表情不能硬切，要「抖一下」</h3>
+
+<p>视频里的表情切换不是 crossfade，是<b>先僵住 100ms 再换</b>——所以你会觉得她「愣了一下」。用 CSS 就能做出这个味道：</p>
+
+<pre class="code-block"><div class="code"><span class="ln">// src/koi/playback/CharacterStage.tsx（片段）</span>
+<span class="ln">// 关键：切表情前先加一个 120ms 的「僵直」，再换图，最后回正</span>
+<span class="ln">const [freeze, setFreeze] = useState(false);</span>
+<span class="ln">const prevEmotion = useRef(emotion);</span>
+<span class="ln"></span>
+<span class="ln">useEffect(() =&gt; {</span>
+<span class="ln">  if (emotion === prevEmotion.current) return;</span>
+<span class="ln">  setFreeze(true);</span>
+<span class="ln">  const t = window.setTimeout(() =&gt; {</span>
+<span class="ln">    prevEmotion.current = emotion;</span>
+<span class="ln">    setFreeze(false);</span>
+<span class="ln">  }, 120);</span>
+<span class="ln">  return () =&gt; window.clearTimeout(t);</span>
+<span class="ln">}, [emotion]);</span>
+<span class="ln"></span>
+<span class="ln">// 僵直时轻微上浮 1px + 亮度压暗，视觉上就是「屏住呼吸」</span>
+<span class="ln">&lt;div</span>
+<span class="ln">  style={{</span>
+<span class="ln">    transform: freeze ? 'translateY(-1px) scale(0.998)' : 'none',</span>
+<span class="ln">    filter: freeze ? 'brightness(0.96)' : 'none',</span>
+<span class="ln">    transition: 'transform 120ms ease-out, filter 120ms ease-out',</span>
+<span class="ln">  }}</span>
+<span class="ln">&gt;</span>
+<span class="ln">  &lt;img src={spriteFor(emotion)} alt="" /&gt;</span>
+<span class="ln">&lt;/div&gt;</span>
+</div></pre>
+
+<p>然后是<b>镜片高光遮罩</b>——视频里最省力的一手，你甚至不需要新立绘：</p>
+
+<pre class="code-block"><div class="code"><span class="ln">// 在角色配置里给「眼镜反光」当一个特殊情绪，渲染成两层</span>
+<span class="ln">// playback/characters.ts</span>
+<span class="ln">glassesGlare: {</span>
+<span class="ln">  base: 'lena/face_neutral.png',   // 底图用中性表情</span>
+<span class="ln">  overlay: 'lena/glare_strip.png', // 一条白色斜高光，盖住眼部</span>
+<span class="ln">  overlayStyle: { top: '18%', height: '14%', mixBlendMode: 'screen' },</span>
+<span class="ln">}</span>
+</div></pre>
+
+<h3>TIER 1：数值飘字要和表情同帧</h3>
+
+<pre class="code-block"><div class="code"><span class="ln">// components/FloatingDelta.tsx —— 挂 300ms 就自己消失，不占布局</span>
+<span class="ln">export function FloatingDelta({ label, value }: { label: string; value: number }) {</span>
+<span class="ln">  const up = value &gt; 0;</span>
+<span class="ln">  return (</span>
+<span class="ln">    &lt;div style={{</span>
+<span class="ln">      position: 'absolute', left: 24, top: 96,</span>
+<span class="ln">      fontFamily: 'var(--font-hand, serif)',</span>
+<span class="ln">      fontSize: 20, fontWeight: 700,</span>
+<span class="ln">      color: up ? '#a3342b' : '#4a4a4a',</span>
+<span class="ln">      animation: 'rise 1600ms cubic-bezier(.2,.9,.2,1) forwards',</span>
+<span class="ln">      pointerEvents: 'none',</span>
+<span class="ln">    }}&gt;</span>
+<span class="ln">      {label} {up ? '+' : ''}{value}</span>
+<span class="ln">    &lt;/div&gt;</span>
+<span class="ln">  );</span>
+<span class="ln">}</span>
+<span class="ln">// index.css</span>
+<span class="ln">// @keyframes rise {</span>
+<span class="ln">//   0%   { opacity: 0; transform: translateY(8px) scale(.94); }</span>
+<span class="ln">//   18%  { opacity: 1; transform: translateY(0)   scale(1.06); }  /* 弹一下 */</span>
+<span class="ln">//   30%  { transform: scale(1); }</span>
+<span class="ln">//   100% { opacity: 0; transform: translateY(-22px); }</span>
+<span class="ln">// }</span>
+</div></pre>
+
+<p class="lead"><strong>要写进剧本语法的是这一行：</strong><code class="inl">[mood:生气 亲密度-1]</code>——把「情绪」和「数值变化」绑在同一条控制指令里，解析器一吐出来，舞台同时切表情、同时飘字。永远不会出现「表情已经变了但数字还没到」的错位，那正是活人感最容易被破坏的地方。</p>
+
+<h3>TIER 2：让台词接住玩家的话</h3>
+
+<p>视频里最能打的一句，实现起来其实非常土——正则：</p>
+
+<pre class="code-block"><div class="code"><span class="ln">// game/reply.ts —— 玩家输入 → 三类反应之一</span>
+<span class="ln">const VAGUE = /^(喜欢|爱你|我爱你|想你|好可爱)[。!！~～]*$/;</span>
+<span class="ln">const REPEAT = /(.)\1{3,}/;  // 同一字重复四遍以上，判定为敷衍</span>
+<span class="ln"></span>
+<span class="ln">export function reactTo(raw: string) {</span>
+<span class="ln">  const text = raw.trim();</span>
+<span class="ln">  if (!text) return { line: '……你倒是说点什么啊。', mood: '无奈', delta: -1 };</span>
+<span class="ln">  if (VAGUE.test(text)) {</span>
+<span class="ln">    // 关键：把玩家的原话引用回去，再挑它的毛病</span>
+<span class="ln">    return {</span>
+<span class="ln">      line: `不……你说「${text}」，我也不知道是喜欢什么啊，宾语呢？`,</span>
+<span class="ln">      mood: '挑眉',</span>
+<span class="ln">      delta: 0,</span>
+<span class="ln">    };</span>
+<span class="ln">  }</span>
+<span class="ln">  if (REPEAT.test(text)) return { line: '为什么又要说啊？', mood: '不耐烦', delta: -1 };</span>
+<span class="ln">  return { line: pickByKeyword(text), mood: '平静', delta: +1 };</span>
+<span class="ln">}</span>
+</div></pre>
+
+<p>注意第三段 <code class="inl">pickByKeyword</code> 不必聪明。<b>玩家不会去测你的覆盖度，只会记住被接住的那一次。</b>十个关键词里接住三个，体感就已经「活」了；剩下七个走通用兜底，只要兜底台词有性格，没人会计较。</p>
+
+<h3>TIER 3：可点击立绘</h3>
+
+<pre class="code-block"><div class="code"><span class="ln">// playback/CharacterStage.tsx —— 用百分比热区，不写死像素</span>
+<span class="ln">const ZONES = [</span>
+<span class="ln">  { id: 'head',   top: 2,  height: 18, text: '头发有点乱，她没在意。' },</span>
+<span class="ln">  { id: 'hand',   top: 46, height: 14, text: '指节上有薄薄一层茧。' },</span>
+<span class="ln">  { id: 'waist',  top: 62, height: 16, text: '纤细的腰肢，摸着没什么感觉。' },</span>
+<span class="ln">];</span>
+<span class="ln"></span>
+<span class="ln">// 点中后不要弹 modal，用视频里那种「底部细条 + 一行小字」</span>
+<span class="ln">// 因为 modal 会打断对话节奏，细条不会</span>
+</div></pre>
+
+<div class="box">
+  <div class="t">别抄的部分</div>
+  <p>它的战斗系统自己承认「还没做完，大概看一下是什么类型就行」。跳跃式的功能堆叠（战斗、探索地图、技能、脱衣差分）在两周 Demo 里是加分项，在你这种要长期连载的卡里是<b>维护债</b>。</p>
+  <p>另外：「扔给 AI 写」在这个体量上行得通，但一旦要维护「亲密度 / 黏度 / 时间 / 体力」四个互相影响的数值，AI 生成的代码会很快变得没人看得懂。你的 <code class="inl">parser.ts</code> 已经是手写状态机，这条路是对的，别回头。</p>
+</div>
+
+<h2><span class="num">CHAPTER 05</span>如果只记三句话</h2>
+
+<div class="cards">
+  <div class="card">
+    <div class="h"><span class="n">A</span><span class="t">活人感的单位是「帧」，不是「设定」</span></div>
+    <p>写一万字人设，不如让她在被冒犯的<b>同一帧</b>变脸 + 飘一个 -1。玩家信的是反应速度，不是背景故事。</p>
+  </div>
+  <div class="card">
+    <div class="h"><span class="n">B</span><span class="t">接住对方的话，比答对问题重要</span></div>
+    <p>「宾语呢？」这一句胜过一百句正确回答。让角色对玩家的<b>表达方式</b>有反应，而不只是对内容有反应。</p>
+  </div>
+  <div class="card">
+    <div class="h"><span class="n">C</span><span class="t">她得有自己的时间</span></div>
+    <p>DAY 1、体能 5/5、天黑了、次日——这些跟对话毫无关系的数字，才是「她不是为你待机」的证据。</p>
+  </div>
+</div>
+
+<footer>
+  拆解依据：原片下载后按 2 秒抽帧（130 帧）+ 游戏窗口区域裁切放大读字 + UP 主黑屏讲解页逐页转录。所有引号内台词均为画面原文，非推测。<br>
+  原片：BV1gant6mETF · 乱步忍Kixy · 2026-10-23
+</footer>
+
+</div>
+</body>
+</html>

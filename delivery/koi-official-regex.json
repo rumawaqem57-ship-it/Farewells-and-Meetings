@@ -1,0 +1,9 @@
+{
+  "scriptName": "koi-界面",
+  "findRegex": "/[\\s\\S]*/s",
+  "replaceString": "```\n<body>\n<script>\n$('body').load('https://cdn.jsdelivr.net/gh/<你的GitHub用户名>/<仓库名>@master/dist/koi/index.html')\n</script>\n</body>\n```",
+  "placement": [2],
+  "disabled": true,
+  "markdownOnly": true,
+  "runOnEdit": false
+}

@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>妖物语 - 灵语交互系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Outfit:wght@400;600;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --wafuu-red: #b33e32;
+            --wafuu-gold: #d4af37;
+            --wafuu-gold-light: #f3e5ab;
+            --wafuu-dark: #12100e;
+            --wafuu-paper: #fcfaf2;
+        }
+
+        /* 基础重置：杜绝 vh/% 导致酒馆 iframe 无限拉伸 */
+        * { box-sizing: border-box; user-select: none; }
+        html, body {
+            margin: 0; padding: 0;
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+            background-color: var(--wafuu-dark);
+            font-family: 'Outfit', 'Noto Serif SC', serif;
+        }
+
+        /* 视口全屏边界锁死容器 */
+        .app-viewport {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        /* 背景层 */
+        .game-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(rgba(18, 16, 14, 0.35), rgba(18, 16, 14, 0.35)), 
+                        url('https://images2.imgbox.com/39/f7/BfC8Y53V_o.jpg');
+            background-size: cover;
+            background-position: center;
+            z-index: -2;
+            transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        /* 樱花粒子画布 */
+        #particleCanvas {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* 页面切换路由 */
+        .page-view {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(1.02);
+            transition: opacity 0.6s cubic-bezier(0.19, 1, 0.22, 1), transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+            z-index: 10;
+        }
+        .page-view.active-page {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1);
+        }
+
+        /* ================= 1. 标题界面 ================= */
+        .title-screen-wrap {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-end;
+            padding-right: 120px;
+            height: 100%;
+        }
+
+        .title-right-cluster {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 22px;
+        }
+
+        .title-logo-main {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 5.8rem;
+            font-weight: 900;
+            letter-spacing: 0.22em;
+            color: #ffffff;
+            text-shadow: 
+                0 0 35px rgba(212, 175, 55, 0.7),
+                3px 3px 0 var(--wafuu-red),
+                -2px -2px 0 rgba(0,0,0,0.8),
+                0 12px 35px rgba(0,0,0,0.95);
+            line-height: 1;
+            margin-right: -0.22em;
+        }
+
+        .title-badge-author {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(179, 62, 50, 0.92);
+            border: 1.5px solid var(--wafuu-gold);
+            padding: 5px 24px;
+            border-radius: 20px;
+            color: #ffffff;
+            font-size: 0.88rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.45);
+        }
+
+        .start-btn-glow {
+            position: relative;
+            background: var(--wafuu-red);
+            color: #ffffff;
+            font-size: 1.25rem;
+            font-weight: 900;
+            letter-spacing: 6px;
+            padding: 16px 68px;
+            border-radius: 40px;
+            border: 2px solid var(--wafuu-gold);
+            box-shadow: 0 8px 32px rgba(179, 62, 50, 0.6);
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-top: 15px;
+        }
+        .start-btn-glow::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.35), transparent);
+            transform: rotate(45deg) translateY(-100%);
+            transition: transform 0.6s ease;
+        }
+        .start-btn-glow:hover {
+            transform: translateY(-4px) scale(1.04);
+            background: var(--wafuu-gold);
+            border-color: #ffffff;
+            box-shadow: 0 12px 40px rgba(212, 175, 55, 0.7);
+        }
+        .start-btn-glow:hover::before {
+            transform: rotate(45deg) translateY(100%);
+        }
+
+        /* ================= 2. 开局设定 ================= */
+        .creation-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 40px;
+        }
+        .creation-card {
+            background: rgba(20, 17, 15, 0.94);
+            backdrop-filter: blur(28px);
+            border: 2px solid var(--wafuu-gold);
+            border-radius: 28px;
+            width: 680px;
+            max-width: 90%;
+            max-height: 85%;
+            overflow-y: auto;
+            padding: 45px 50px;
+            box-shadow: 0 24px 70px rgba(0,0,0,0.85);
+            position: relative;
+        }
+
+        .cut-corner-input-wrap {
+            position: relative;
+            background: #141312;
+            border: 1.5px solid rgba(212, 175, 55, 0.35);
+            border-radius: 6px;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            transition: all 0.3s ease;
+        }
+        .cut-corner-input-wrap:focus-within {
+            border-color: var(--wafuu-gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+        .cut-corner-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            padding: 16px 22px;
+            color: #ffffff;
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+        .cut-corner-input::placeholder {
+            color: rgba(255, 255, 255, 0.35);
+            font-weight: 500;
+        }
+
+        /* ================= 3. 游戏主交互界面 ================= */
+        .character-container {
+            position: absolute; inset: 0; display: flex; justify-content: center; align-items: flex-end;
+            padding-bottom: 70px; pointer-events: none; z-index: 10;
+        }
+        .character-sprite {
+            height: 94vh; object-fit: contain;
+            filter: drop-shadow(0 15px 30px rgba(0,0,0,0.6));
+            animation: spriteFloat 6s ease-in-out infinite;
+        }
+        @keyframes spriteFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
+
+        /* 顶部 56px 收缩菜单 */
+        .top-nav-wrap { position: fixed; top: 25px; right: 40px; display: flex; align-items: center; gap: 15px; z-index: 100; }
+        .nav-items-container { display: flex; gap: 12px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 8px 15px; border-radius: 30px; border: 1.5px solid var(--wafuu-gold); transform-origin: right center; transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1); }
+        .nav-items-container.collapsed { opacity: 0; transform: scaleX(0); pointer-events: none; margin-right: -15px; }
+        
+        .menu-toggle-btn { width: 56px; height: 56px; background: var(--wafuu-red); color: white; border: 2px solid var(--wafuu-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 101; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s; }
+        .menu-toggle-btn:hover { transform: scale(1.05); }
+
+        /* 对话框总容器 */
+        .dialogue-box-container { position: absolute; bottom: 0; left: 0; right: 0; height: 260px; z-index: 50; transition: all 0.7s cubic-bezier(0.19, 1, 0.22, 1); }
+        .dialogue-hidden { transform: translateY(300px); opacity: 0; pointer-events: none; }
+        .dialogue-content-float { width: 100%; height: 100%; padding: 25px 80px 100px 80px; position: relative; }
+
+        /* 绘莉名字居中横线 */
+        .name-wrapper { display: inline-flex; flex-direction: column; align-items: center; margin-bottom: 12px; }
+        .name-title-img-style {
+            color: #ffffff; font-family: 'Noto Serif SC', sans-serif; font-size: 1.85rem; font-weight: 900; letter-spacing: 3px; line-height: 1.2;
+            text-shadow: -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0px 3px 6px rgba(0, 0, 0, 0.9);
+            padding: 0 10px;
+        }
+        .name-underline-glow {
+            width: 240px; height: 2px;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0) 100%);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.8); margin-top: 5px;
+        }
+
+        .dialogue-text { color: white; font-size: 1.45rem; line-height: 1.7; font-weight: 900; text-shadow: 2px 2px 10px rgba(0, 0, 0, 1); letter-spacing: 1.2px; max-width: 90%; }
+        .hide-box-btn { position: absolute; top: 35px; right: 80px; color: white; opacity: 0.6; cursor: pointer; transition: all 0.3s; }
+        .hide-box-btn:hover { color: var(--wafuu-gold); transform: translateY(5px); }
+
+        /* 底部控制栏 */
+        .ctrl-panel-far-left { position: absolute; bottom: 30px; left: 80px; display: flex; gap: 12px; z-index: 80; }
+        .ctrl-panel-right-group { position: absolute; bottom: 30px; right: 80px; display: flex; gap: 12px; z-index: 80; }
+        .ctrl-item { font-size: 12px; font-weight: 900; color: white; background: rgba(179, 62, 50, 0.95); height: 36px; padding: 0 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; letter-spacing: 2px; border: 1.5px solid var(--wafuu-gold); cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.4); white-space: nowrap; }
+        .ctrl-item:hover { background: var(--wafuu-gold); transform: translateY(-2px); }
+        .ctrl-item.active { background: var(--wafuu-gold); border-color: white; }
+
+        /* 输入覆盖层 */
+        .input-overlay { position: absolute; inset: 0; left: 80px; right: 80px; top: 20px; bottom: 100px; background: rgba(255, 255, 255, 0.15); border-radius: 20px; backdrop-filter: blur(20px); border: 2.5px solid var(--wafuu-gold); display: flex; flex-direction: column; padding: 25px; opacity: 0; pointer-events: none; transition: 0.4s; z-index: 60; }
+        .input-active .input-overlay { opacity: 1; pointer-events: auto; }
+        .input-active .dialogue-content-float { opacity: 0; }
+        .full-textarea { width: 100%; height: 100%; background: transparent; border: none; outline: none; color: white; font-size: 1.6rem; font-weight: 900; line-height: 1.7; resize: none; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+
+        /* ================= 4. 设置面板与波浪式音量条 ================= */
+        .settings-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); backdrop-filter: blur(25px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .settings-card { background: #161412; width: 620px; max-width: 90vw; max-height: 85vh; border-radius: 28px; border: 2px solid var(--wafuu-gold); color: white; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 60px rgba(0,0,0,0.9); }
+        .settings-tabs { display: flex; background: #221f1c; padding: 12px 16px; gap: 10px; border-bottom: 1px solid rgba(212, 175, 55, 0.2); }
+        .tab-btn { flex: 1; padding: 12px; border-radius: 14px; font-weight: 900; cursor: pointer; transition: 0.3s; background: #2c2724; text-align: center; font-size: 14px; color: rgba(255,255,255,0.7); }
+        .tab-btn.active { background: var(--wafuu-red); color: white; border: 1px solid var(--wafuu-gold); box-shadow: 0 4px 15px rgba(179, 62, 50, 0.4); }
+        .settings-body { padding: 30px; overflow-y: auto; flex-grow: 1; }
+
+        /* 和风波浪音量滑块样式 */
+        .vol-row { margin-bottom: 30px; }
+        
+        .wafuu-wave-container {
+            position: relative;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+
+        .wave-svg-layer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .wave-bg-path {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.15);
+            stroke-width: 4px;
+            stroke-linecap: round;
+        }
+
+        .wave-active-path {
+            fill: none;
+            stroke-width: 4.5px;
+            stroke-linecap: round;
+            filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.6));
+            transition: clip-path 0.05s ease-out;
+        }
+
+        .wave-slider-thumb {
+            position: absolute;
+            top: 50%;
+            width: 18px;
+            height: 18px;
+            background: #ffffff;
+            border: 2.5px solid var(--wafuu-gold);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.9), 0 2px 6px rgba(0,0,0,0.6);
+            pointer-events: none;
+            transition: left 0.05s ease-out;
+            z-index: 5;
+        }
+
+        .range-input-hidden {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        /* 选项按钮 */
+        .opt-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 12px; margin-top: 10px; }
+        .opt-btn { background: #2a2522; padding: 12px; border-radius: 12px; text-align: center; font-size: 14px; font-weight: 900; cursor: pointer; border: 1.5px solid rgba(255,255,255,0.05); color: rgba(255,255,255,0.8); transition: all 0.2s; }
+        .opt-btn.active { background: var(--wafuu-red); color: #ffffff; border-color: var(--wafuu-gold); box-shadow: 0 0 12px rgba(179, 62, 50, 0.4); }
+
+        .member-modal-card { background: rgba(252, 245, 230, 0.98); width: 950px; max-width: 90vw; max-height: 85vh; border-radius: 32px; border: 2px solid var(--wafuu-gold); display: grid; grid-template-columns: 280px 1fr; overflow: hidden; position: relative; box-shadow: 0 0 60px rgba(0,0,0,0.8); }
+        @media (max-width: 768px) { .member-modal-card { grid-template-columns: 1fr; } }
+
+        .show-dialogue-btn { position: fixed; bottom: 40px; right: 40px; width: 64px; height: 64px; background: var(--wafuu-red); color: white; border-radius: 50%; border: 3px solid var(--wafuu-gold); display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 100; box-shadow: 0 8px 25px rgba(179, 62, 50, 0.5); }
+        @keyframes bounceIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .animate-show { animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    </style>
+</head>
+<body>
+
+    <!-- 视口边界锁死容器 -->
+    <div class="app-viewport">
+        
+        <div class="game-bg" id="globalBg"></div>
+        <canvas id="particleCanvas"></canvas>
+
+        <!-- ================= 1. 标题界面 ================= -->
+        <section id="titleScreen" class="page-view active-page">
+            <div class="title-screen-wrap">
+                <div class="title-right-cluster">
+                    <p class="text-xs text-[var(--wafuu-gold)] tracking-[0.6em] font-black opacity-85 uppercase">
+                        The Ayakashi Tale of Fate
+                    </p>
+
+                    <h1 class="title-logo-main">妖物语</h1>
+
+                    <div class="title-badge-author">
+                        <i data-lucide="feather" size="15"></i>
+                        <span>制作者 · 梦</span>
+                    </div>
+
+                    <button class="start-btn-glow" onclick="handleStartGameClick()">
+                        <span>开始游戏</span>
+                    </button>
+                    
+                    <p class="text-[11px] text-white/50 tracking-widest font-bold pr-2">
+                        点击启程 · 探寻羁绊宿命
+                    </p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= 2. 开局创建页面 ================= -->
+        <section id="creationScreen" class="page-view">
+            <div class="creation-container">
+                <div class="creation-card text-white">
+                    
+                    <!-- 标题部分 -->
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-500 flex items-center justify-center text-pink-400">
+                            <i data-lucide="user" size="18"></i>
+                        </div>
+                        <h2 class="text-2xl font-black text-white tracking-wide">
+                            设置你的名字
+                        </h2>
+                    </div>
+
+                    <!-- 说明文案 -->
+                    <p class="text-white/80 text-[15px] font-medium leading-relaxed mb-6">
+                        AI 会用你的名字写场景（如"二楼XXX卧室"）。输入名字后前端会自动匹配场景背景图，否则部分背景图无法显示。
+                    </p>
+
+                    <!-- 斜切角输入框 -->
+                    <div class="cut-corner-input-wrap mb-8">
+                        <input 
+                            type="text" 
+                            id="playerInputName" 
+                            class="cut-corner-input" 
+                            placeholder="输入你在酒馆里设置的名字..."
+                            autocomplete="off"
+                        >
+                    </div>
+
+                    <!-- 操作按钮组 -->
+                    <div class="flex justify-end items-center gap-4 pt-4 border-t border-white/10">
+                        <button class="text-white/60 font-bold text-sm px-6 py-2.5 rounded-full hover:text-white transition-colors" onclick="switchPage('titleScreen')">
+                            返回标题
+                        </button>
+                        <button class="bg-[var(--wafuu-red)] text-white font-black text-sm px-10 py-3 rounded-full border border-[var(--wafuu-gold)] hover:bg-[var(--wafuu-gold)] transition-all shadow-lg hover:scale-105" onclick="confirmCharacterSetup()">
+                            确认并启程
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= 3. 游戏主界面 (已移除所有破折号) ================= -->
+        <section id="mainGameScreen" class="page-view">
+            <!-- 角色立绘 -->
+            <div class="character-container">
+                <img src="https://images2.imgbox.com/7d/50/jZc0yMIs_o.png" alt="Character" class="character-sprite" id="characterSprite">
+            </div>
+
+            <!-- 顶部导航 -->
+            <div class="top-nav-wrap">
+                <div class="nav-items-container collapsed" id="topNavItems">
+                    <div class="w-11 h-11 bg-white text-[var(--wafuu-red)] border-2 border-[var(--wafuu-gold)] rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-all" onclick="openMembers()" title="角色档案"><i data-lucide="users-2" size="20"></i></div>
+                    <div class="w-11 h-11 bg-white text-[var(--wafuu-red)] border-2 border-[var(--wafuu-gold)] rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-all" title="重生成对话"><i data-lucide="refresh-cw" size="20"></i></div>
+                    <div class="w-11 h-11 bg-white text-[var(--wafuu-red)] border-2 border-[var(--wafuu-gold)] rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-all" onclick="toggleFullScreen()"><i data-lucide="maximize" size="20"></i></div>
+                    <div class="w-11 h-11 bg-white text-[var(--wafuu-red)] border-2 border-[var(--wafuu-gold)] rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-all" onclick="toggleSettings(true)"><i data-lucide="settings" size="20"></i></div>
+                </div>
+                <div class="menu-toggle-btn" id="menuTrigger" onclick="toggleTopMenu()">
+                    <i data-lucide="chevron-left" size="32" id="toggleIcon"></i>
+                </div>
+            </div>
+
+            <!-- 对话框总容器 -->
+            <div class="dialogue-box-container" id="dialogueContainer">
+                
+                <!-- 文字内容区 (已去除破折号) -->
+                <div class="dialogue-content-float">
+                    <div class="hide-box-btn" onclick="toggleDialogue(false)">
+                        <i data-lucide="chevron-down" size="44"></i>
+                    </div>
+                    
+                    <!-- 绘莉名字居中横线 -->
+                    <div class="name-wrapper">
+                        <div class="name-title-img-style">绘莉</div>
+                        <div class="name-underline-glow"></div>
+                    </div>
+
+                    <!-- 移除了破折号后的文本 -->
+                    <p class="dialogue-text" id="mainText">
+                        「对啊，不快点的话怎么打扫神社，呀！偷听女孩子说话可不是什么绅士的行为呐，汝这家伙，刚才在想什么失礼的事？」
+                    </p>
+                </div>
+
+                <!-- 输入覆盖层 -->
+                <div class="input-overlay" id="inputOverlay">
+                    <textarea class="full-textarea" placeholder="输入你想说的话..." id="userInput"></textarea>
+                    <button class="absolute bottom-6 right-8 text-[var(--wafuu-gold)] hover:scale-125 transition-all" onclick="sendMessage()"><i data-lucide="send" size="44"></i></button>
+                </div>
+
+                <!-- 底部左侧控制栏 -->
+                <div class="ctrl-panel-far-left">
+                    <div class="ctrl-item" id="penBtn" onclick="toggleInputMode()"><i data-lucide="pen-line" size="16"></i></div>
+                    <div class="ctrl-item">历史</div>
+                    <div class="ctrl-item">上一句</div>
+                    <div class="ctrl-item">AUTO</div>
+                    <div class="ctrl-item" onclick="toggleSpeed()">语速：<span id="currentSpeed">中</span></div>
+                </div>
+
+                <!-- 底部右侧切换栏 -->
+                <div class="ctrl-panel-right-group">
+                    <div class="ctrl-item">上层</div>
+                    <div class="ctrl-item">下层</div>
+                </div>
+            </div>
+
+            <!-- 唤回按钮 -->
+            <div class="show-dialogue-btn" id="showBoxBtn" onclick="toggleDialogue(true)">
+                <i data-lucide="chevron-up" size="36"></i>
+            </div>
+        </section>
+
+        <!-- 角色档案模态框 -->
+        <div id="memberModal" class="settings-overlay">
+            <div class="member-modal-card">
+                <div class="bg-[#242120] p-8 text-white flex flex-col justify-between border-r border-white/5">
+                    <div>
+                        <h2 class="text-xs tracking-[0.5em] text-[var(--wafuu-gold)] mb-8 font-black">MEMBERS ARCHIVE</h2>
+                        <div class="space-y-4" id="memberList"></div>
+                    </div>
+                    <button class="mt-8 bg-[var(--wafuu-red)] text-white py-2 px-6 rounded-full font-black text-sm border border-[var(--wafuu-gold)]" onclick="closeMembers()">返回游戏</button>
+                </div>
+                <div class="p-10 bg-[#fffdfa] overflow-y-auto" id="memberDetail"></div>
+            </div>
+        </div>
+
+        <!-- ================= 4. 和风波浪式设置面板 ================= -->
+        <div id="settingsPanel" class="settings-overlay">
+            <div class="settings-card">
+                <div class="settings-tabs">
+                    <div class="tab-btn active" data-tab="audio">音频设置</div>
+                    <div class="tab-btn" data-tab="text">文字设置</div>
+                    <div class="tab-btn" data-tab="display">画面设置</div>
+                </div>
+
+                <div class="settings-body" id="settingsBody">
+                    <!-- 音频页 -->
+                    <div id="audioPage">
+                        
+                        <!-- 背景音乐 (BGM) 波浪滑块 -->
+                        <div class="vol-row">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-black text-sm text-white/90 flex items-center gap-2">
+                                    <i data-lucide="music" size="16" class="text-[var(--wafuu-gold)]"></i>
+                                    背景音乐 (BGM)
+                                </span>
+                                <span class="text-[var(--wafuu-gold)] font-black text-sm" id="bgmNum">40%</span>
+                            </div>
+                            
+                            <div class="wafuu-wave-container">
+                                <svg class="wave-svg-layer" viewBox="0 0 500 36" preserveAspectRatio="none">
+                                    <defs>
+                                        <linearGradient id="waveGradRed" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="var(--wafuu-red)" />
+                                            <stop offset="100%" stop-color="var(--wafuu-gold)" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path class="wave-bg-path" d="M 0 18 Q 12.5 6, 25 18 T 50 18 T 75 18 T 100 18 T 125 18 T 150 18 T 175 18 T 200 18 T 225 18 T 250 18 T 275 18 T 300 18 T 325 18 T 350 18 T 375 18 T 400 18 T 425 18 T 450 18 T 475 18 T 500 18" />
+                                    <path id="bgmWavePath" class="wave-active-path" stroke="url(#waveGradRed)" style="clip-path: inset(0 60% 0 0);" d="M 0 18 Q 12.5 6, 25 18 T 50 18 T 75 18 T 100 18 T 125 18 T 150 18 T 175 18 T 200 18 T 225 18 T 250 18 T 275 18 T 300 18 T 325 18 T 350 18 T 375 18 T 400 18 T 425 18 T 450 18 T 475 18 T 500 18" />
+                                </svg>
+                                <div class="wave-slider-thumb" id="bgmWaveThumb" style="left: 40%;"></div>
+                                <input type="range" class="range-input-hidden" min="0" max="100" value="40" oninput="handleVol('bgm', this.value)">
+                            </div>
+                        </div>
+
+                        <!-- 环境音效 (SE) 波浪滑块 -->
+                        <div class="vol-row">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-black text-sm text-white/90 flex items-center gap-2">
+                                    <i data-lucide="bell" size="16" class="text-[var(--wafuu-gold)]"></i>
+                                    环境音效 (SE)
+                                </span>
+                                <span class="text-[var(--wafuu-gold)] font-black text-sm" id="seNum">60%</span>
+                            </div>
+                            
+                            <div class="wafuu-wave-container">
+                                <svg class="wave-svg-layer" viewBox="0 0 500 36" preserveAspectRatio="none">
+                                    <defs>
+                                        <linearGradient id="waveGradGold" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#e65100" />
+                                            <stop offset="100%" stop-color="var(--wafuu-gold)" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path class="wave-bg-path" d="M 0 18 Q 12.5 6, 25 18 T 50 18 T 75 18 T 100 18 T 125 18 T 150 18 T 175 18 T 200 18 T 225 18 T 250 18 T 275 18 T 300 18 T 325 18 T 350 18 T 375 18 T 400 18 T 425 18 T 450 18 T 475 18 T 500 18" />
+                                    <path id="seWavePath" class="wave-active-path" stroke="url(#waveGradGold)" style="clip-path: inset(0 40% 0 0);" d="M 0 18 Q 12.5 6, 25 18 T 50 18 T 75 18 T 100 18 T 125 18 T 150 18 T 175 18 T 200 18 T 225 18 T 250 18 T 275 18 T 300 18 T 325 18 T 350 18 T 375 18 T 400 18 T 425 18 T 450 18 T 475 18 T 500 18" />
+                                </svg>
+                                <div class="wave-slider-thumb" id="seWaveThumb" style="left: 60%;"></div>
+                                <input type="range" class="range-input-hidden" min="0" max="100" value="60" oninput="handleVol('se', this.value)">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- 文字页 -->
+                    <div id="textPage" class="hidden">
+                        <p class="font-black text-sm mb-2 text-white/90">文字速度</p>
+                        <div class="opt-row">
+                            <div class="opt-btn active">瞬间</div>
+                            <div class="opt-btn">慢速</div>
+                            <div class="opt-btn">普通</div>
+                            <div class="opt-btn">快速</div>
+                        </div>
+                        <p class="font-black text-sm mb-2 mt-6 text-white/90">AUTO 模式等待时间</p>
+                        <div class="opt-row">
+                            <div class="opt-btn">短</div>
+                            <div class="opt-btn active">普通</div>
+                            <div class="opt-btn">长</div>
+                        </div>
+                    </div>
+
+                    <!-- 画面显示页 -->
+                    <div id="displayPage" class="hidden">
+                        <p class="font-black text-sm mb-2 text-white/90">画面显示模式</p>
+                        <div class="opt-row">
+                            <div class="opt-btn active">智能自适应</div>
+                            <div class="opt-btn">宽屏桌面</div>
+                            <div class="opt-btn">竖屏移动</div>
+                        </div>
+                        <div class="mt-8 flex justify-between items-center p-4 bg-[#231f1c] rounded-xl border border-white/5">
+                            <span class="font-black text-sm text-white/90">天气粒子特效</span>
+                            <div class="w-12 h-6 bg-[var(--wafuu-red)] border border-[var(--wafuu-gold)] rounded-full relative cursor-pointer">
+                                <div class="absolute right-1 top-0.5 w-4 h-4 bg-white rounded-full shadow"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-[#201d1a] border-t border-white/10 flex justify-end">
+                    <button class="bg-[var(--wafuu-red)] px-10 py-2.5 rounded-full font-black text-sm border border-[var(--wafuu-gold)] hover:bg-[var(--wafuu-gold)] transition-colors shadow-md" onclick="toggleSettings(false)">保存并返回</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        let userCustomName = "";
+
+        // ================= 页面路由管理 =================
+        function switchPage(targetPageId) {
+            document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active-page'));
+            const target = document.getElementById(targetPageId);
+            if (target) {
+                target.classList.add('active-page');
+            }
+        }
+
+        // ================= 酒馆楼层与名字检测 =================
+        async function getSillyTavernFloor() {
+            try {
+                const helper = window.TavernHelper || window.parent?.TavernHelper;
+                if (helper) {
+                    if (typeof helper.getChatLength === 'function') {
+                        const len = await helper.getChatLength();
+                        return typeof len === 'number' ? len : 0;
+                    }
+                    if (typeof helper.getLastMessageId === 'function') {
+                        const id = await helper.getLastMessageId();
+                        return typeof id === 'number' ? id : 0;
+                    }
+                }
+                const stContext = window.SillyTavern?.getContext?.() || window.parent?.SillyTavern?.getContext?.();
+                if (stContext && Array.isArray(stContext.chat)) {
+                    return stContext.chat.length;
+                }
+            } catch (err) {
+                console.warn("[酒馆环境] 楼层检测降级:", err);
+            }
+            return 0;
+        }
+
+        function tryPreloadTavernUserName() {
+            try {
+                const stContext = window.SillyTavern?.getContext?.() || window.parent?.SillyTavern?.getContext?.();
+                if (stContext && stContext.name1) {
+                    const input = document.getElementById('playerInputName');
+                    if (input && !input.value) {
+                        input.value = stContext.name1;
+                    }
+                }
+            } catch (e) {}
+        }
+
+        async function handleStartGameClick() {
+            const floor = await getSillyTavernFloor();
+            console.log("[酒馆环境] 当前最新楼层:", floor);
+            
+            if (floor === 0) {
+                tryPreloadTavernUserName();
+                switchPage('creationScreen');
+            } else {
+                switchPage('mainGameScreen');
+            }
+        }
+
+        function confirmCharacterSetup() {
+            const input = document.getElementById('playerInputName');
+            userCustomName = input.value.trim() || "旅人";
+            switchPage('mainGameScreen');
+        }
+
+        // ================= 粒子特效 =================
+        (function initParticles() {
+            const canvas = document.getElementById('particleCanvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            for (let i = 0; i < 28; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 4 + 2,
+                    speedX: Math.random() * 1.5 + 0.5,
+                    speedY: Math.random() * 1.2 + 0.8,
+                    opacity: Math.random() * 0.6 + 0.2,
+                    angle: Math.random() * Math.PI * 2
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle);
+                    ctx.fillStyle = `rgba(255, 192, 203, ${p.opacity})`;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, p.size * 1.5, p.size * 0.8, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+
+                    p.x += p.speedX;
+                    p.y += p.speedY;
+                    p.angle += 0.01;
+
+                    if (p.x > canvas.width + 10) p.x = -10;
+                    if (p.y > canvas.height + 10) p.y = -10;
+                });
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
+        // ================= 顶部导航与通用交互 =================
+        function toggleTopMenu() {
+            const items = document.getElementById('topNavItems');
+            const icon = document.getElementById('toggleIcon');
+            const isCollapsed = items.classList.toggle('collapsed');
+            icon.setAttribute('data-lucide', isCollapsed ? 'chevron-left' : 'chevron-right');
+            lucide.createIcons();
+        }
+
+        const members = [
+            { id: 1, name: '绘莉', gender: '女', favor: 95, title: '神刀之魂', desc: '神社的守护灵，性格活泼任性，但其实对身边的人非常温柔体贴。非常喜欢吃甜食。' },
+            { id: 2, name: '朝武 芳乃', gender: '女', favor: 88, title: '穗织巫女', desc: '神社的巫女，做事非常认真谨慎，深受镇上居民的信赖。' }
+        ];
+
+        function openMembers() {
+            document.getElementById('memberModal').style.display = 'flex';
+            const list = document.getElementById('memberList');
+            list.innerHTML = members.map(m => `
+                <div class="p-3 rounded-xl cursor-pointer hover:bg-white/10 transition-all font-black text-lg flex items-center gap-3" onclick="showMemberDetail(${m.id})">
+                    <div class="w-1.5 h-4 bg-[var(--wafuu-gold)]"></div>
+                    ${m.name}
+                </div>
+            `).join('');
+            showMemberDetail(1);
+        }
+
+        function showMemberDetail(id) {
+            const m = members.find(x => x.id === id);
+            document.getElementById('memberDetail').innerHTML = `
+                <h3 class="text-5xl font-black text-[#333] mb-2">${m.name}</h3>
+                <p class="text-[var(--wafuu-gold)] font-bold tracking-[0.3em] mb-6">${m.title}</p>
+                <div class="flex gap-4 mb-6">
+                    <span class="px-4 py-1 bg-gray-100 rounded-full text-sm font-bold text-gray-600">性别：${m.gender}</span>
+                    <span class="px-4 py-1 bg-pink-50 text-[var(--wafuu-red)] rounded-full text-sm font-bold border border-pink-200">好感度：${m.favor}%</span>
+                </div>
+                <div class="bg-[#f9f5f0] p-6 rounded-2xl border-l-4 border-[var(--wafuu-red)] italic text-gray-700 text-lg leading-relaxed">
+                    “ ${m.desc} ”
+                </div>
+            `;
+        }
+
+        function closeMembers() {
+            document.getElementById('memberModal').style.display = 'none';
+        }
+
+        const speeds = ['慢', '中', '快'];
+        let speedIndex = 1;
+        function toggleSpeed() {
+            speedIndex = (speedIndex + 1) % speeds.length;
+            document.getElementById('currentSpeed').innerText = speeds[speedIndex];
+        }
+
+        function toggleDialogue(show) {
+            const container = document.getElementById('dialogueContainer');
+            const btn = document.getElementById('showBoxBtn');
+            if(show) {
+                container.classList.remove('dialogue-hidden');
+                btn.style.display = 'none';
+            } else {
+                container.classList.add('dialogue-hidden');
+                setTimeout(() => { btn.style.display = 'flex'; btn.classList.add('animate-show'); }, 400);
+            }
+        }
+
+        function toggleSettings(show) {
+            document.getElementById('settingsPanel').style.display = show ? 'flex' : 'none';
+        }
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const page = btn.dataset.tab;
+                ['audioPage', 'textPage', 'displayPage'].forEach(p => document.getElementById(p).classList.add('hidden'));
+                document.getElementById(page + 'Page').classList.remove('hidden');
+            }
+        });
+
+        // 和风波浪滑块实时精准控制
+        function handleVol(type, val) {
+            const path = document.getElementById(type + 'WavePath');
+            const thumb = document.getElementById(type + 'WaveThumb');
+            const num = document.getElementById(type + 'Num');
+            
+            const clipRight = 100 - val;
+            if (path) {
+                path.style.clipPath = `inset(0 ${clipRight}% 0 0)`;
+            }
+            if (thumb) {
+                thumb.style.left = val + '%';
+            }
+            if (num) {
+                num.innerText = val + '%';
+            }
+        }
+
+        document.querySelectorAll('.opt-btn').forEach(btn => {
+            btn.onclick = () => {
+                btn.parentElement.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+        });
+
+        function toggleInputMode() {
+            const container = document.getElementById('dialogueContainer');
+            const pen = document.getElementById('penBtn');
+            const isActive = container.classList.toggle('input-active');
+            pen.classList.toggle('active', isActive);
+            if(isActive) document.getElementById('userInput').focus();
+        }
+
+        // 文字即时直接呈现 (已去除破折号)
+        function sendMessage() {
+            const val = document.getElementById('userInput').value;
+            if(!val.trim()) return;
+            document.getElementById('mainText').innerText = `「${val}」 汝说的话我已经清楚听到了。既然如此，那就按照约定继续吧。`;
+            document.getElementById('userInput').value = '';
+            toggleInputMode();
+        }
+
+        document.getElementById('userInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        }
+    </script>
+</body>
+</html>

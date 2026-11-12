@@ -1,0 +1,9 @@
+{
+  "scriptName": "koi-界面-开发",
+  "findRegex": "/[\\s\\S]*/s",
+  "replaceString": "```\n<body>\n<script>\n$('body').load('http://localhost:5500/koi/index.html')\n</script>\n</body>\n```",
+  "placement": [2],
+  "disabled": true,
+  "markdownOnly": true,
+  "runOnEdit": false
+}

@@ -1,0 +1,19 @@
+node_modules/
+.pnpm-store/
+.secrets/
+_reference/
+_evidence/
+assets/locations/*.png
+*.log
+.DS_Store
+
+# Workspace-only snapshots and backups
+_backup/
+.godhand/
+.workbuddy/
+
+# Embedded repositories and auxiliary skill projects
+taste-skill/
+tavern-cards-repo/
+tavern-content/
+tavern-tanuki/
