@@ -65,5 +65,5 @@ http
     });
   })
   .listen(PORT, () => {
-    console.log(`[serve] http://localhost:${PORT}/yao/index.html`);
+    console.log(`[serve] http://localhost:${PORT}/koi/index.html`);
   });
